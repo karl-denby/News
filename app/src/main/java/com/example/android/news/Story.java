@@ -16,4 +16,4 @@ public class Story {
     public String getAuthor() {return mAuthor;}
 
     public String getURL() {return mURL;}
-}
+};
