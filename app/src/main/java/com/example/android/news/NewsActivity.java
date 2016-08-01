@@ -1,12 +1,15 @@
 package com.example.android.news;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -67,13 +70,13 @@ public class NewsActivity extends AppCompatActivity {
      */
     private void updateUI() {
         // Check for internet connection and update listView if no internet
-        ListView lvStories = (ListView) findViewById(R.id.list_item);
+        final ListView lvStories = (ListView) findViewById(R.id.list_item);
         TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
         TextView tvNoContent = (TextView) findViewById(R.id.no_content);
 
         // ArrayList >> Adapter >> ListView
-        ArrayList<Story> arrayOfStories = QueryUtils.extractStories("");
-        StoryAdapter storyAdapter = new StoryAdapter(this, arrayOfStories);
+        final ArrayList<Story> arrayOfStories = QueryUtils.extractStories("");
+        final StoryAdapter storyAdapter = new StoryAdapter(this, arrayOfStories);
         lvStories.setAdapter(storyAdapter);
 
         // Either show list, show no internet or show no content
@@ -86,6 +89,20 @@ public class NewsActivity extends AppCompatActivity {
             tvNoContent.setVisibility(View.VISIBLE);
             tvNoInternet.setVisibility(View.GONE);
         }
+
+        lvStories.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                String url = "http://www.google.com";
+
+                Uri webPage = Uri.parse(url);
+                Intent intent = new Intent(Intent.ACTION_VIEW, webPage);
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(intent);
+                }
+            }
+        });
+
     }
 
     /**
