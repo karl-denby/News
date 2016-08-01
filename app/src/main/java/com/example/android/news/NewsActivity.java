@@ -6,9 +6,14 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ListView;
+import android.widget.TextView;
 
 public class NewsActivity extends AppCompatActivity {
 
+    protected final String LOG_TAG = "NewsActivity";
     String aString;
 
     @Override
@@ -22,6 +27,15 @@ public class NewsActivity extends AppCompatActivity {
         editor.putString("A String", aString);
         editor.apply();
 
+        // Clear out emptyView, as when app resumes we will need to decide what to display
+        ListView lvStories = (ListView) findViewById(R.id.list_item);
+        TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
+        TextView tvNoContent = (TextView) findViewById(R.id.no_content);
+
+        lvStories.setEmptyView(null);
+        tvNoInternet.setVisibility(View.GONE);
+        tvNoContent.setVisibility(View.GONE);
+
     } // onPause
 
 
@@ -29,7 +43,10 @@ public class NewsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news);
-    }
+
+        updateUI();
+
+    } // onCreate
 
     @Override
     protected void onResume() {
@@ -39,14 +56,36 @@ public class NewsActivity extends AppCompatActivity {
         SharedPreferences sharedPref = NewsActivity.this.getSharedPreferences("News", Context.MODE_PRIVATE);
         aString = sharedPref.getString("aString", "");
 
+        updateUI();
+
     } // onResume
+
+    /**
+     * If no internet, set emptyView to "no internet"
+     * else no content to display, set to "no content"
+     */
+    private void updateUI() {
+        // Check for internet connection and update listView if no internet
+        ListView lvStories = (ListView) findViewById(R.id.list_item);
+        TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
+        TextView tvNoContent = (TextView) findViewById(R.id.no_content);
+
+        if (!networkAvailable()) {
+            lvStories.setEmptyView(tvNoInternet);
+            tvNoInternet.setVisibility(View.VISIBLE);
+            tvNoContent.setVisibility(View.GONE);
+        } else {
+            lvStories.setEmptyView(tvNoContent);
+            tvNoContent.setVisibility(View.VISIBLE);
+            tvNoInternet.setVisibility(View.GONE);
+        }
+    }
 
     /**
      * Will check for null result which mean no interface is online
      */
     private boolean networkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
