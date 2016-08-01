@@ -6,10 +6,11 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import java.util.ArrayList;
 
 public class NewsActivity extends AppCompatActivity {
 
@@ -70,6 +71,12 @@ public class NewsActivity extends AppCompatActivity {
         TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
         TextView tvNoContent = (TextView) findViewById(R.id.no_content);
 
+        // ArrayList >> Adapter >> ListView
+        ArrayList<Story> arrayOfStories = QueryUtils.extractStories("");
+        StoryAdapter storyAdapter = new StoryAdapter(this, arrayOfStories);
+        lvStories.setAdapter(storyAdapter);
+
+        // Either show list, show no internet or show no content
         if (!networkAvailable()) {
             lvStories.setEmptyView(tvNoInternet);
             tvNoInternet.setVisibility(View.VISIBLE);
