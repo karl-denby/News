@@ -8,6 +8,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -93,8 +94,7 @@ public class NewsActivity extends AppCompatActivity {
         lvStories.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                String url = "http://www.google.com";
-
+                String url = view.getTag().toString();
                 Uri webPage = Uri.parse(url);
                 Intent intent = new Intent(Intent.ACTION_VIEW, webPage);
                 if (intent.resolveActivity(getPackageManager()) != null) {

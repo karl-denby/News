@@ -34,6 +34,7 @@ public class StoryAdapter extends ArrayAdapter<Story> {
         // Populate the data into the template view using the data object
         tvTitle.setText(story.getTitle());
         tvAuthor.setText(story.getAuthor());
+        convertView.setTag(story.getURL());
 
         // Return the completed view to render on screen
         return convertView;
