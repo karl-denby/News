@@ -33,13 +33,18 @@ import java.util.logging.LogRecord;
 public class NewsActivity extends AppCompatActivity {
 
     protected final String LOG_TAG = "NewsActivity";
-    URL queryUrl = makeURL("http://content.guardianapis.com/search?show-fields=headline%2Cbyline&q=football&api-key=test");
-    String jsonDocumentAsString;
+    URL queryUrl = makeURL("http://content.guardianapis.com/search?" +
+            "order-by=newest" +
+            "&show-fields=headline%2Cbyline" +
+            "&page=1" +
+            "&page-size=20" +
+            "&q=sport" +
+            "&api-key=test");
+    String jsonDocumentAsString = "{}";
 
     @Override
     protected void onPause() {
         super.onPause();
-
         // Save the book values
         SharedPreferences sharedPref = NewsActivity.this.getSharedPreferences("News", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
@@ -55,9 +60,7 @@ public class NewsActivity extends AppCompatActivity {
         lvStories.setEmptyView(null);
         tvNoInternet.setVisibility(View.GONE);
         tvNoContent.setVisibility(View.GONE);
-
     } // onPause
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,9 +95,13 @@ public class NewsActivity extends AppCompatActivity {
         results.execute(queryUrl);
     } // onResume
 
-    private URL makeURL(String http_link) {
+    /**
+     * @param url_string url in a string
+     * @return url
+     */
+    private URL makeURL(String url_string) {
         try {
-            return new URL(http_link);
+            return new URL(url_string);
         } catch (MalformedURLException exception) {
             Log.e(LOG_TAG, "Error with creating URL", exception);
             return null;
@@ -102,17 +109,18 @@ public class NewsActivity extends AppCompatActivity {
     }
 
     /**
+     * @param jsonDocumentAsString is a stored string containing a JSON response from the API
      * If no internet, set emptyView to "no internet"
      * else no content to display, set to "no content"
      */
-    private void updateUI(String http_result) {
+    private void updateUI(String jsonDocumentAsString) {
         // Check for internet connection and update listView if no internet
         final ListView lvStories = (ListView) findViewById(R.id.list_item);
         final TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
         final TextView tvNoContent = (TextView) findViewById(R.id.no_content);
 
         // ArrayList >> Adapter >> ListView
-        final ArrayList<Story> arrayOfStories = QueryUtils.extractStories(http_result);
+        final ArrayList<Story> arrayOfStories = QueryUtils.extractStories(jsonDocumentAsString);
         final StoryAdapter storyAdapter = new StoryAdapter(this, arrayOfStories);
         lvStories.setAdapter(null);
 
@@ -140,7 +148,7 @@ public class NewsActivity extends AppCompatActivity {
                 }
             }
         });
-    }
+    } // updateUI
 
     /**
      * Will check for null result which mean no interface is online
@@ -159,22 +167,20 @@ public class NewsActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(URL... urls) {
 
-            String result = "";
             // Can't update the UI from here, only thread that made them (main OnCreate) can
             // update them, so just run query, get results and store them somewhere that the
             // main thread can access and use to update the UI.
             try {
-                result = makeHttpRequest(urls[0]);
+                jsonDocumentAsString = makeHttpRequest(urls[0]);
             } catch (IOException e) {
                 Log.e(LOG_TAG,"HTTP error", e);
             }
-            return result;
+            return jsonDocumentAsString;
         }
 
         @Override
-        protected void onPostExecute(String result) {
-            jsonDocumentAsString = result;  // save for later restoration
-            updateUI(result);
+        protected void onPostExecute(String jsonDocumentAsString) {
+            updateUI(jsonDocumentAsString);
         }
     } // BooksAsyncTask
 
@@ -184,7 +190,7 @@ public class NewsActivity extends AppCompatActivity {
      * @throws IOException, if something went wrong on the Internet
      */
     private String makeHttpRequest(URL url) throws IOException {
-        String jsonResponse = "";
+        String jsonResponse = "{}";
         HttpURLConnection urlConnection = null;
         InputStream inputStream = null;
         try {
