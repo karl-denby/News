@@ -46,7 +46,7 @@ public final class QueryUtils {
     public static ArrayList<Story> extractStories(String query_results) {
 
         // TODO: remove this when we pass input, used only for testing
-        query_results = SAMPLE_JSON_RESPONSE;
+        //query_results = SAMPLE_JSON_RESPONSE;
 
         // Create an empty ArrayList that we can start adding stories to
         ArrayList<Story> stories = new ArrayList<>();
