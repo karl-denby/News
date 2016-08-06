@@ -1,14 +1,15 @@
 package com.example.android.news;
 
+
+
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -16,20 +17,39 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
 
-public class NewsActivity extends AppCompatActivity {
+public class NewsActivity extends FragmentActivity
+        implements android.support.v4.app.LoaderManager.LoaderCallbacks<List<Story>> {
 
     protected final String LOG_TAG = "NewsActivity";
+    StoryAdapter storyAdapter;
 
+    // Loader lifecycle Events
+    @Override
+    public StoryLoader onCreateLoader(int id, Bundle args) {
+        return new StoryLoader(this);
+    }
+
+    @Override public void onLoaderReset(Loader<List<Story>> param1) {
+        // TODO: Something
+    }
+
+    @Override
+    public void onLoadFinished(Loader<List<Story>> loader, List<Story> data) {
+        // update listView with loaded content
+        ListView lvStories = (ListView) findViewById(R.id.list_item);
+
+        Log.v(LOG_TAG, "Loader onLoadFinished");
+        // ArrayList >> Adapter >> ListView
+        ArrayList<Story> arrayOfStories = QueryUtils.extractStories("{}");
+        storyAdapter = new StoryAdapter(this, arrayOfStories);
+        lvStories.setAdapter(storyAdapter);
+        storyAdapter.notifyDataSetChanged();
+    }
+
+    // App lifecycle Events
     @Override
     protected void onPause() {
         super.onPause();
@@ -57,16 +77,23 @@ public class NewsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news);
 
+        // Initialize our global storyAdapter
+        // -- Setup Loader to populate the storyAdapter
+        //storyAdapter = new StoryAdapter(this, new ArrayList<Story>());
+        this.getSupportLoaderManager().initLoader(0, null, NewsActivity.this).forceLoad();
+
         Button btn_refresh = (Button) findViewById(R.id.refresh);
         btn_refresh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // Check for new data and updateUI (background thread)
-                updateUI("{}");
+                if (storyAdapter != null) {
+                    updateUI(storyAdapter);
+                } else {
+                    Log.v(LOG_TAG, "storyAdapter was Null");
+                }
             }
         });
-
-        updateUI("{}");
     } // onCreate
 
     @Override
@@ -80,28 +107,28 @@ public class NewsActivity extends AppCompatActivity {
         // Check for new data and updateUI (background thread)
         //StoryAsyncTask results = new StoryAsyncTask();
         //results.execute(queryUrl);
-        updateUI("{}");
     } // onResume
 
     /**
-     * @param jsonDocumentAsString is a stored string containing a JSON response from the API
-     *                             If no internet, set emptyView to "no internet"
-     *                             else no content to display, set to "no content"
+     * @param stories a stored collection of Story's in a list adapter
+     *                If no internet, set emptyView to "no internet"
+     *                else no content to display, set to "no content"
      */
-    private void updateUI(String jsonDocumentAsString) {
+    private void updateUI(StoryAdapter stories) {
         // Check for internet connection and update listView if no internet
-        final ListView lvStories = (ListView) findViewById(R.id.list_item);
-        final TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
-        final TextView tvNoContent = (TextView) findViewById(R.id.no_content);
-        final Button btnRefresh = (Button) findViewById(R.id.refresh);
+        ListView lvStories = (ListView) findViewById(R.id.list_item);
+        TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
+        TextView tvNoContent = (TextView) findViewById(R.id.no_content);
+        Button btnRefresh = (Button) findViewById(R.id.refresh);
 
-        // ArrayList >> Adapter >> ListView
-        final ArrayList<Story> arrayOfStories = QueryUtils.extractStories(jsonDocumentAsString);
-        final StoryAdapter storyAdapter = new StoryAdapter(this, arrayOfStories);
-        lvStories.setAdapter(null);
-
+        Log.v(LOG_TAG, "updateUI");
+        lvStories.setAdapter(stories);
+        stories.notifyDataSetChanged();
+        tvNoInternet.setVisibility(View.GONE);
+        tvNoContent.setVisibility(View.GONE);
         // Either show no internet
         // or show no content view, then load storyAdapter
+/*
         if (!networkAvailable()) {
             lvStories.setEmptyView(tvNoInternet);
             tvNoInternet.setVisibility(View.VISIBLE);
@@ -113,9 +140,7 @@ public class NewsActivity extends AppCompatActivity {
             tvNoInternet.setVisibility(View.GONE);
             btnRefresh.setVisibility(View.VISIBLE);
         }
-
-        lvStories.setAdapter(storyAdapter);
-
+*/
         lvStories.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
