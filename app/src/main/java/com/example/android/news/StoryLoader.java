@@ -1,6 +1,5 @@
 package com.example.android.news;
 
-
 import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
 import android.util.Log;
@@ -13,10 +12,59 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.List;
 
 public class StoryLoader extends AsyncTaskLoader<List<Story>> {
+
+    // Variables
+    protected final String LOG_TAG = "StoryLoader";
+    URL queryUrl = makeURL(
+            "http://content.guardianapis.com/search" +
+            "?order-by=newest" +
+            "&show-fields=headline%2Cbyline" +
+            "&page=1" +
+            "&page-size=20" +
+            "&q=sport" +
+            "&api-key=test");
+
+    public StoryLoader(Context ctx) {
+        super(ctx);
+    }
+
+    /****************************************************/
+    /** (1) A task that performs the asynchronous load **/
+    /****************************************************/
+
+    @Override
+    public List<Story> loadInBackground() {
+        // This method is called on a background thread and should generate a
+        // new set of data to be delivered back to the client.
+        String jsonDocumentAsString = "{}";
+
+        // use URL to query API and return STRING(of JSON data)
+        try {
+            jsonDocumentAsString = makeHttpRequest(queryUrl);
+            Log.v(LOG_TAG, "HttpRequest done answer has size " + jsonDocumentAsString.length());
+        } catch (IOException e) {
+            Log.e(LOG_TAG,"HTTP error", e);
+        }
+
+        // use STRING to pull out and DECODE JSON return ArrayList<Story>
+        List<Story> listOfStory = QueryUtils.extractStories(jsonDocumentAsString);
+
+        return listOfStory;
+    }
+
+    @Override
+    protected void onStartLoading() {
+        if (takeContentChanged())
+            forceLoad();
+    }
+
+    @Override
+    protected void onStopLoading() {
+        cancelLoad();
+    }
 
     private String makeHttpRequest(URL url) throws IOException {
         String jsonResponse = "{}";
@@ -57,24 +105,6 @@ public class StoryLoader extends AsyncTaskLoader<List<Story>> {
         return output.toString();
     } //readFromStream
 
-    // Other variables
-    protected final String LOG_TAG = "StoryLoader";
-    URL queryUrl = makeURL("http://content.guardianapis.com/search?" +
-            "order-by=newest" +
-            "&show-fields=headline%2Cbyline" +
-            "&page=1" +
-            "&page-size=20" +
-            "&q=sport" +
-            "&api-key=test");
-
-    public StoryLoader(Context ctx) {
-        super(ctx);
-    }
-
-    /****************************************************/
-    /** (1) A task that performs the asynchronous load **/
-    /****************************************************/
-
     /**
      * @param url_string url in a string
      * @return url
@@ -88,36 +118,4 @@ public class StoryLoader extends AsyncTaskLoader<List<Story>> {
         }
     }
 
-    @Override
-    public List<Story> loadInBackground() {
-        // This method is called on a background thread and should generate a
-        // new set of data to be delivered back to the client.
-        List<Story> data = new ArrayList<Story>();
-        String jsonDocumentAsString = "{}";
-
-        // TODO: Perform the query here and add the results to 'data'.
-        // use URL to query API and return STRING(of JSON data)
-        try {
-            jsonDocumentAsString = makeHttpRequest(queryUrl);
-        } catch (IOException e) {
-            Log.e(LOG_TAG,"HTTP error", e);
-        }
-
-        // use STRING to pull out and DECODE JSON return ArrayList<Story>
-        List<Story> fakeListOfStory = QueryUtils.extractStories(jsonDocumentAsString);
-
-        Log.v(LOG_TAG, "Hello from loadInBackground");
-        return fakeListOfStory;
-    }
-
-    @Override
-    protected void onStartLoading() {
-        if (takeContentChanged())
-            forceLoad();
-    }
-
-    @Override
-    protected void onStopLoading() {
-        cancelLoad();
-    }
 }

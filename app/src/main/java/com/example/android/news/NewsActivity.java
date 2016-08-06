@@ -1,7 +1,6 @@
 package com.example.android.news;
 
 
-
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -13,7 +12,6 @@ import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -33,118 +31,45 @@ public class NewsActivity extends FragmentActivity
     }
 
     @Override public void onLoaderReset(Loader<List<Story>> param1) {
-        // TODO: Something
+        updateUI();
     }
 
     @Override
     public void onLoadFinished(Loader<List<Story>> loader, List<Story> data) {
-        // update listView with loaded content
-        ListView lvStories = (ListView) findViewById(R.id.list_item);
-
-        Log.v(LOG_TAG, "Loader onLoadFinished");
-        // ArrayList >> Adapter >> ListView
-        ArrayList<Story> arrayOfStories = QueryUtils.extractStories("{}");
+        /**
+         * turn "List<Story> data" into "ArrayList<Story> arrayOfStories"
+         * attach data to listView
+         * updateUI makes sure extra views are not visible
+         */
+        ArrayList<Story> arrayOfStories;
+        arrayOfStories = new ArrayList<>();
+        for (int i = 0; i < data.size(); i++) {
+            arrayOfStories.add(i, data.get(i));
+        }
         storyAdapter = new StoryAdapter(this, arrayOfStories);
+
+        // attach data to listView and tell it to refresh
+        ListView lvStories = (ListView) findViewById(R.id.list_item);
         lvStories.setAdapter(storyAdapter);
         storyAdapter.notifyDataSetChanged();
+        updateUI();
     }
 
     // App lifecycle Events
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Save the book values
-        //SharedPreferences sharedPref = NewsActivity.this.getSharedPreferences("News", Context.MODE_PRIVATE);
-        //SharedPreferences.Editor editor = sharedPref.edit();
-
-        //editor.putString("jsonDocumentAsString", jsonDocumentAsString);
-        //editor.apply();
-
-        // Clear out emptyView, as when app resumes we will need to decide what to display
-        ListView lvStories = (ListView) findViewById(R.id.list_item);
-        TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
-        TextView tvNoContent = (TextView) findViewById(R.id.no_content);
-        Button btnRefresh = (Button) findViewById(R.id.refresh);
-
-        lvStories.setEmptyView(null);
-        tvNoInternet.setVisibility(View.GONE);
-        tvNoContent.setVisibility(View.GONE);
-        btnRefresh.setVisibility(View.VISIBLE);
-    } // onPause
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_news);
 
-        // Initialize our global storyAdapter
-        // -- Setup Loader to populate the storyAdapter
-        //storyAdapter = new StoryAdapter(this, new ArrayList<Story>());
-        this.getSupportLoaderManager().initLoader(0, null, NewsActivity.this).forceLoad();
+        getSupportLoaderManager().initLoader(0, null, NewsActivity.this).forceLoad();
 
-        Button btn_refresh = (Button) findViewById(R.id.refresh);
-        btn_refresh.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Check for new data and updateUI (background thread)
-                if (storyAdapter != null) {
-                    updateUI(storyAdapter);
-                } else {
-                    Log.v(LOG_TAG, "storyAdapter was Null");
-                }
-            }
-        });
-    } // onCreate
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        // Restore saved values
-        //SharedPreferences sharedPref = NewsActivity.this.getSharedPreferences("News", Context.MODE_PRIVATE);
-        //jsonDocumentAsString = sharedPref.getString("jsonDocumentAsString", "");
-
-        // Check for new data and updateUI (background thread)
-        //StoryAsyncTask results = new StoryAsyncTask();
-        //results.execute(queryUrl);
-    } // onResume
-
-    /**
-     * @param stories a stored collection of Story's in a list adapter
-     *                If no internet, set emptyView to "no internet"
-     *                else no content to display, set to "no content"
-     */
-    private void updateUI(StoryAdapter stories) {
-        // Check for internet connection and update listView if no internet
+        // When user clicks a story open it with the browser
         ListView lvStories = (ListView) findViewById(R.id.list_item);
-        TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
-        TextView tvNoContent = (TextView) findViewById(R.id.no_content);
-        Button btnRefresh = (Button) findViewById(R.id.refresh);
-
-        Log.v(LOG_TAG, "updateUI");
-        lvStories.setAdapter(stories);
-        stories.notifyDataSetChanged();
-        tvNoInternet.setVisibility(View.GONE);
-        tvNoContent.setVisibility(View.GONE);
-        // Either show no internet
-        // or show no content view, then load storyAdapter
-/*
-        if (!networkAvailable()) {
-            lvStories.setEmptyView(tvNoInternet);
-            tvNoInternet.setVisibility(View.VISIBLE);
-            tvNoContent.setVisibility(View.GONE);
-            btnRefresh.setVisibility(View.VISIBLE);
-        } else {
-            lvStories.setEmptyView(tvNoContent);
-            tvNoContent.setVisibility(View.VISIBLE);
-            tvNoInternet.setVisibility(View.GONE);
-            btnRefresh.setVisibility(View.VISIBLE);
-        }
-*/
         lvStories.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
                 String url = view.getTag().toString();
+                Log.v(LOG_TAG,"Click url is " + url);
                 Uri webPage = Uri.parse(url);
                 Intent intent = new Intent(Intent.ACTION_VIEW, webPage);
                 if (intent.resolveActivity(getPackageManager()) != null) {
@@ -152,6 +77,29 @@ public class NewsActivity extends FragmentActivity
                 }
             }
         });
+    } // onCreate
+
+    /**
+     * Set the correct EmptyView and make the other one disappear
+     */
+    private void updateUI() {
+        ListView lvStories = (ListView) findViewById(R.id.list_item);
+        TextView tvNoInternet = (TextView) findViewById(R.id.no_internet);
+        TextView tvNoContent = (TextView) findViewById(R.id.no_content);
+
+        lvStories.setVisibility(View.VISIBLE);
+        tvNoInternet.setVisibility(View.GONE);
+        tvNoContent.setVisibility(View.GONE);
+
+        // Either show no internet
+        // or show no content view, then load storyAdapter
+        if (!networkAvailable()) {
+            lvStories.setEmptyView(tvNoInternet);
+            tvNoInternet.setVisibility(View.VISIBLE);
+        } else {
+            lvStories.setEmptyView(tvNoContent);
+            tvNoContent.setVisibility(View.VISIBLE);
+        }
     } // updateUI
 
     /**
